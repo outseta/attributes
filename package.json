@@ -1,0 +1,19 @@
+{
+  "name": "@yourcompany/attributes",
+  "version": "1.0.0",
+  "description": "Modular attribute-based JavaScript library for enhanced web functionality",
+  "main": "dist/attributes.js",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "rollup": "^3.0.0"
+  },
+  "keywords": ["attributes", "modules", "javascript", "library"],
+  "author": "Your Company",
+  "license": "MIT"
+}
