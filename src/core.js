@@ -11,17 +11,36 @@
     }
   };
 
+  // Find the script tag that loaded this library
+  function findScriptTag() {
+    // Try currentScript first (works during script execution)
+    if (document.currentScript) {
+      return document.currentScript;
+    }
+    
+    // Fallback: find script by src attribute
+    const scripts = document.querySelectorAll('script[src*="attributes.js"]');
+    
+    if (scripts.length > 0) {
+      // Return the last one (most recently loaded)
+      return scripts[scripts.length - 1];
+    }
+    
+    return null;
+  }
+
   // Initialize modules based on attributes
   function initModules() {
-    const script = document.currentScript;
-    if (!script) return;
+    const script = findScriptTag();
+    if (!script) {
+      return;
+    }
 
-    // Get all attributes that start with our prefix
+    // Get all attributes that could be module names
     const attributes = Array.from(script.attributes);
     const moduleNames = attributes
       .map(attr => attr.name)
-      .filter(name => name.startsWith('o-') || name === 'o')
-      .map(name => name.replace('o-', ''));
+      .filter(name => name !== 'src' && name !== 'async' && name !== 'type' && name !== 'defer');
 
     // Load and initialize requested modules
     moduleNames.forEach(moduleName => {
@@ -31,8 +50,6 @@
         } catch (error) {
           console.error(`Error initializing module '${moduleName}':`, error);
         }
-      } else {
-        console.warn(`Module '${moduleName}' not found`);
       }
     });
   }
@@ -67,7 +84,10 @@ Attributes.register('mark-complete', function() {
     const markBtn = wrapper.querySelector('[data-o-lesson-action="mark"]');
     const unmarkBtn = wrapper.querySelector('[data-o-lesson-action="unmark"]');
 
-    const data = JSON.parse(user.CompletedLessons || '[]');
+    // Get the property name from the wrapper or use default
+    const propertyName = wrapper.getAttribute('data-o-property') || 'CompletedLessons';
+
+    const data = JSON.parse(user[propertyName] || '[]');
 
     const setComplete = () => {
       if (markBtn) markBtn.style.display = 'none';
@@ -90,7 +110,7 @@ Attributes.register('mark-complete', function() {
     markBtn?.addEventListener('click', () => {
       if (!data.includes(lessonId)) {
         data.push(lessonId);
-        user.update({ CompletedLessons: JSON.stringify(data) })
+        user.update({ [propertyName]: JSON.stringify(data) })
             .then(setComplete);
       }
     });
@@ -100,7 +120,7 @@ Attributes.register('mark-complete', function() {
       const idx = data.indexOf(lessonId);
       if (idx !== -1) {
         data.splice(idx, 1);
-        user.update({ CompletedLessons: JSON.stringify(data) })
+        user.update({ [propertyName]: JSON.stringify(data) })
             .then(unsetComplete);
       }
     });
