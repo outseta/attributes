@@ -4,9 +4,9 @@ export default {
   input: 'src/core.js',
   output: {
     file: 'dist/attributes.js',
-    format: 'iife',
-    name: 'Attributes',
-    sourcemap: true
+    format: 'es',
+    sourcemap: true,
+    inlineDynamicImports: true
   },
   plugins: [nodeResolve()],
   external: ['Outseta'] // Keep Outseta as external dependency
