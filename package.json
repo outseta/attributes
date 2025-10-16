@@ -1,20 +1,40 @@
 {
   "name": "@outseta/attributes",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Modular attribute-based JavaScript library for enhanced web functionality",
-  "main": "dist/attributes.js",
+  "main": "dist/core.js",
   "type": "module",
   "files": [
     "dist/"
   ],
   "scripts": {
     "build": "rollup -c",
-    "dev": "rollup -c -w",
+    "dev": "npm run build && concurrently \"rollup -c -w\" \"http-server -p 3000 -c-1 --cors\"",
+    "lint": "eslint src/**/*.js",
+    "lint:fix": "eslint src/**/*.js --fix",
+    "format": "prettier --write src/**/*.js",
+    "format:check": "prettier --check src/**/*.js",
+    "clean": "rm -rf dist",
+    "prepare": "husky install",
     "prepublishOnly": "npm run build"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^15.0.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.0",
+    "glob": "^11.0.3",
+    "husky": "^8.0.3",
+    "http-server": "^14.1.1",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.5",
     "rollup": "^3.0.0"
+  },
+  "lint-staged": {
+    "src/**/*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "keywords": [
     "attributes",

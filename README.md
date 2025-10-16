@@ -1,16 +1,24 @@
 # Attributes Library
 
-A modular JavaScript library that loads functionality based on HTML attributes, similar to Finsweet's approach.
+A modular JavaScript library that loads functionality based on HTML attributes, similar to Finsweet's approach. Modules are loaded dynamically only when requested, keeping bundle sizes minimal.
 
 ## Usage
 
 Include the library in your HTML and specify which modules you want to use:
 
 ```html
-<script async type="module" src="https://cdn.jsdelivr.net/npm/@outseta/attributes@latest/dist/attributes.js" 
+<script async type="module" src="https://cdn.jsdelivr.net/npm/@outseta/attributes@latest/dist/core.js" 
   mark-complete
 ></script>
 ```
+
+## How It Works
+
+The library uses a **modular loading system**:
+- **Core library** (`core.js`) is lightweight and loads first
+- **Modules** are loaded dynamically only when requested via attributes
+- **No bundling** - each module is a separate file for optimal caching
+- **On-demand loading** - only the modules you need are downloaded
 
 ## Available Modules
 
@@ -52,7 +60,25 @@ npm install
 npm run build
 ```
 
-The built file will be in `dist/attributes.js`.
+The built files will be in `dist/`:
+- `core.js` - Main library file
+- `modules/` - Individual module files
+
+## Development
+
+For development, use the enhanced development workflow:
+
+```bash
+# Start development server (builds, watches for changes, and serves files)
+npm run dev
+```
+
+### Development Tools
+- **ESLint**: Code quality and consistency (`npm run lint`)
+- **Prettier**: Code formatting (`npm run format`)
+- **Build Watcher**: Automatic rebuilds on file changes
+- **Pre-commit hooks**: Automatic code quality checks
+
 
 ## Adding New Modules
 
@@ -65,8 +91,8 @@ Attributes.register('module-name', function() {
 });
 ```
 
-3. Import it in `src/core.js`
-4. Rebuild with `npm run build`
+3. Rebuild with `npm run build`
+4. The module will be automatically available for dynamic loading
 
 ## Dependencies
 
