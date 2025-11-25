@@ -12,7 +12,10 @@
   };
 
   // Import modules after Attributes object is created
-  import('./modules/course.js').then(() => {
+  Promise.all([
+    import('./modules/course.js'),
+    import('./modules/list.js')
+  ]).then(() => {
     // Find the script tag that loaded this library
     function findScriptTag() {
       // Try currentScript first (works during script execution)
