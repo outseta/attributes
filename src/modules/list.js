@@ -19,6 +19,9 @@ Attributes.register('o-list', function () {
     Outseta.getUser().then(function (user) {
       // Get configuration from container attributes
       const propertyName = container.getAttribute('data-o-list-property');
+      const filterMode = container.getAttribute('data-o-list-filter') || 'include';
+      const limitAttr = container.getAttribute('data-o-list-limit');
+      const limit = limitAttr ? parseInt(limitAttr, 10) : null;
       
       if (!propertyName) {
         console.error('List filter: data-o-list-property is required');
@@ -69,10 +72,20 @@ Attributes.register('o-list', function () {
       // Find all list items within this container (children with data-o-list-itemid)
       const listItems = container.querySelectorAll('[data-o-list-itemid]');
       
-      if (filterValues.length === 0) {
-        // No filter values - show empty state, hide all items
+      // Determine which items should be shown based on filter mode
+      const shouldShowItem = (itemId) => {
+        const isInList = filterValues.includes(itemId);
+        return filterMode === 'exclude' ? !isInList : isInList;
+      };
+
+      // For include mode with no filter values, show empty state
+      // For exclude mode with no filter values, show all items (nothing to exclude)
+      const hasNoFilterValues = filterValues.length === 0;
+      const showEmptyState = filterMode === 'include' && hasNoFilterValues;
+      
+      if (showEmptyState) {
+        // No filter values in include mode - show empty state, hide all items
         emptyStateElements.forEach(element => {
-          // Override CSS rule with important to show the element
           element.style.setProperty('display', 'block', 'important');
         });
         
@@ -80,24 +93,36 @@ Attributes.register('o-list', function () {
           item.style.setProperty('display', 'none', 'important');
         });
       } else {
-        // Hide empty state elements
-        emptyStateElements.forEach(element => {
-          element.style.setProperty('display', 'none', 'important');
-        });
+        // Filter items based on mode and apply limit
+        let shownCount = 0;
+        let anyShown = false;
         
-        // Show items that match filter values, hide others
         listItems.forEach(item => {
           const itemId = item.getAttribute('data-o-list-itemid');
+          const shouldShow = shouldShowItem(itemId);
+          const withinLimit = limit === null || shownCount < limit;
           
-          if (filterValues.includes(itemId)) {
-            // Show this item (it matches one of the filter values)
+          if (shouldShow && withinLimit) {
             item.style.setProperty('display', '', 'important');
+            shownCount++;
+            anyShown = true;
           } else {
-            // Hide this item (it doesn't match)
             item.style.setProperty('display', 'none', 'important');
           }
         });
+        
+        // Show empty state if no items were shown
+        emptyStateElements.forEach(element => {
+          if (anyShown) {
+            element.style.setProperty('display', 'none', 'important');
+          } else {
+            element.style.setProperty('display', 'block', 'important');
+          }
+        });
       }
+
+      // Dispatch event to signal filtering is complete
+      container.dispatchEvent(new CustomEvent('o-list:filtered', { bubbles: true }));
     });
   });
 });
