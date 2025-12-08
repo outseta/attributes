@@ -20,28 +20,69 @@ Attributes.register('o-course', function () {
     document.head.appendChild(style);
   }
 
-  // Handle redirect elements (only redirect once per session)
-  const redirectElements = document.querySelectorAll('[data-o-course-element="redirect"]');
-  redirectElements.forEach(element => {
-    // Find the <a> tag within this element (or if this element is an <a> tag itself)
-    const link = element.tagName === 'A' ? element : element.querySelector('a');
-    if (link) {
-      const href = link.getAttribute('href');
-      if (href) {
-        // Create a unique key for this redirect based on the current page and href
-        const redirectKey = `redirected_${window.location.pathname}_${href}`;
-        
-        // Check if we've already redirected from this page in this session
-        if (!sessionStorage.getItem(redirectKey)) {
+  // Handle redirect elements (only redirect once per session, only for visible elements)
+  const processRedirects = () => {
+    // Check if we've already redirected from this page in this session
+    const redirectKey = `o-course-redirected_${window.location.pathname}`;
+    if (sessionStorage.getItem(redirectKey)) {
+      return;
+    }
+
+    const redirectElements = document.querySelectorAll('[data-o-course-element="redirect"]');
+    for (const element of redirectElements) {
+      // Skip if element is hidden (e.g., filtered out by o-list)
+      if (!isElementVisible(element)) {
+        continue;
+      }
+
+      // Find the <a> tag within this element (or if this element is an <a> tag itself)
+      const link = element.tagName === 'A' ? element : element.querySelector('a');
+      if (link) {
+        const href = link.getAttribute('href');
+        if (href) {
           // Mark that we've redirected from this page
           sessionStorage.setItem(redirectKey, 'true');
           
-          // Immediately redirect to the href
+          // Redirect to the href
           window.location.href = href;
+          return; // Stop after first redirect
         }
       }
     }
-  });
+  };
+
+  // Check if o-list is present on the page
+  const oListContainers = document.querySelectorAll('[data-o-list-element="list"]');
+  
+  if (oListContainers.length > 0) {
+    // Wait for o-list to finish filtering, then process redirects
+    let listsFiltered = 0;
+    const totalLists = oListContainers.length;
+    
+    oListContainers.forEach(container => {
+      container.addEventListener('o-list:filtered', () => {
+        listsFiltered++;
+        if (listsFiltered >= totalLists) {
+          processRedirects();
+        }
+      }, { once: true });
+    });
+  } else {
+    // No o-list on page, process redirects immediately
+    processRedirects();
+  }
+
+  // Helper to check if element is visible (not hidden by display:none on self or ancestors)
+  function isElementVisible(element) {
+    while (element && element !== document.body) {
+      const style = window.getComputedStyle(element);
+      if (style.display === 'none') {
+        return false;
+      }
+      element = element.parentElement;
+    }
+    return true;
+  }
 
   // Find all lesson elements on the page
   const lessonElements = document.querySelectorAll('[data-o-course-lessonid]');
@@ -56,9 +97,8 @@ Attributes.register('o-course', function () {
       const completedLessonsProperty =
         wrapper.getAttribute('data-o-course-completedlessonsprop') ||
         'CompletedLessons';
-      const lastLessonProperty =
-        wrapper.getAttribute('data-o-course-lastlessonprop') ||
-        'LastLessonCompleted';
+      // Only track last lesson if explicitly configured
+      const lastLessonProperty = wrapper.getAttribute('data-o-course-lastlessonprop');
 
       const data = JSON.parse(user[completedLessonsProperty] || '[]');
 
@@ -99,8 +139,10 @@ Attributes.register('o-course', function () {
 
               const updates = {
                 [completedLessonsProperty]: JSON.stringify(data),
-                [lastLessonProperty]: lessonId,
               };
+              if (lastLessonProperty) {
+                updates[lastLessonProperty] = lessonId;
+              }
 
               user
                 .update(updates)
@@ -198,11 +240,13 @@ Attributes.register('o-course', function () {
         if (!data.includes(lessonId)) {
           data.push(lessonId);
 
-          // Update both properties: completed lessons list and last lesson ID
+          // Update completed lessons list (and last lesson ID if configured)
           const updates = {
             [completedLessonsProperty]: JSON.stringify(data),
-            [lastLessonProperty]: lessonId,
           };
+          if (lastLessonProperty) {
+            updates[lastLessonProperty] = lessonId;
+          }
 
           user
             .update(updates)
@@ -216,9 +260,10 @@ Attributes.register('o-course', function () {
         if (idx !== -1) {
           data.splice(idx, 1);
 
-          // Update completed lessons list
+          // Update completed lessons list (use empty string if no lessons, otherwise JSON array)
+          const completedValue = data.length > 0 ? JSON.stringify(data) : '';
           user
-            .update({ [completedLessonsProperty]: JSON.stringify(data) })
+            .update({ [completedLessonsProperty]: completedValue })
             .then(() => unsetComplete(wrapper, markBtn, unmarkBtn));
 
           // Note: We don't clear the lastLessonProperty when unmarking
