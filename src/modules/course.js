@@ -84,8 +84,8 @@ Attributes.register('o-course', function () {
     return true;
   }
 
-  // Find all lesson elements on the page
-  const lessonElements = document.querySelectorAll('[data-o-course-lessonid]');
+  // Find all lesson wrappers on the page
+  const lessonElements = document.querySelectorAll('[data-o-course-element="lesson"]');
 
   lessonElements.forEach(wrapper => {
     Outseta.getUser().then(function (user) {
@@ -95,10 +95,10 @@ Attributes.register('o-course', function () {
 
       // Get the property names from the wrapper or use defaults
       const completedLessonsProperty =
-        wrapper.getAttribute('data-o-course-completedlessonsprop') ||
+        wrapper.getAttribute('data-o-course-completed') ||
         'CompletedLessons';
       // Only track last lesson if explicitly configured
-      const lastLessonProperty = wrapper.getAttribute('data-o-course-lastlessonprop');
+      const lastLessonProperty = wrapper.getAttribute('data-o-course-lastlesson');
 
       const data = JSON.parse(user[completedLessonsProperty] || '[]');
 
@@ -158,10 +158,10 @@ Attributes.register('o-course', function () {
 
       // Function to update completion indicators in lesson lists
       const updateLessonListIndicators = () => {
-        const lessonItems = document.querySelectorAll('[data-o-course-lessonlistitemid]');
+        const lessonItems = document.querySelectorAll('[data-o-course-element="lesson-list-item"]');
         
         lessonItems.forEach(item => {
-          const itemLessonId = item.getAttribute('data-o-course-lessonlistitemid');
+          const itemLessonId = item.getAttribute('data-o-course-lessonid');
           const incompleteIndicator = item.querySelector(
             '[data-o-course-element="lesson-list-item-incomplete"]'
           );
@@ -193,8 +193,8 @@ Attributes.register('o-course', function () {
         if (markBtn) markBtn.style.display = 'none';
         if (unmarkBtn) unmarkBtn.style.display = 'inline-flex';
 
-        // Show next lesson elements
-        const nextLessonElements = document.querySelectorAll(
+        // Show next lesson elements within this wrapper
+        const nextLessonElements = wrapper.querySelectorAll(
           '[data-o-course-element="next-lesson-link"]'
         );
         nextLessonElements.forEach(element => {
@@ -209,12 +209,11 @@ Attributes.register('o-course', function () {
         if (markBtn) markBtn.style.display = 'inline-flex';
         if (unmarkBtn) unmarkBtn.style.display = 'none';
 
-        // Hide next lesson elements
-        const nextLessonElements = document.querySelectorAll(
+        // Hide next lesson elements within this wrapper
+        const nextLessonElements = wrapper.querySelectorAll(
           '[data-o-course-element="next-lesson-link"]'
         );
         nextLessonElements.forEach(element => {
-          // First animate both opacity and transform
           element.style.opacity = '0';
           element.style.pointerEvents = 'none';
         });
